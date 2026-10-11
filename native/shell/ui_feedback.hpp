@@ -1,5 +1,6 @@
 #pragma once
 #include "../runtime/ui_feedback.hpp"
+#include "../runtime/guest_addresses.hpp"
 #include <algorithm>
 #include <array>
 #include <span>
@@ -30,7 +31,7 @@ inline UiFeedback read_ui(std::span<const std::uint8_t> ram, std::uint64_t field
         | (std::uint32_t(ram[a+2]) << 8) | ram[a+3]; };
     auto half = [&](unsigned a) { return std::int16_t((unsigned(ram[a]) << 8) | ram[a+1]); };
     auto pointer = [](std::uint32_t a) { return a >= 0x80000000 && a <= 0x807fffb8 && !(a & 3); };
-    auto mode = half(0xa5ab4);
+    auto mode = half(runtime::guest::physical(runtime::guest::game_mode));
     result.guest_mode = mode;
     // Mode 12 covers the mission location card; the text briefing uses mode 4.
     // Its input-loop observer distinguishes it from pre-briefing loading frames.
@@ -113,7 +114,7 @@ inline UiFeedback read_ui(std::span<const std::uint8_t> ram, std::uint64_t field
     const bool locked = half(0xf0c20) != 0;
     const bool build = !locked && ram[0xc6a64] != 0;
     if (!locked && !build) {
-        if (ram[0xafefc]) return result; // split-screen needs its own player/layout proof
+        if (ram[runtime::guest::physical(runtime::guest::split_screen)]) return result; // split-screen needs its own player/layout proof
         const auto context=runtime::hud_context_hash([&](std::uint32_t physical) { return ram[physical]; });
         result.context=context;
         result.pick_required=true;

@@ -288,7 +288,6 @@ std::uint64_t underruns() { return underrun_count.load(); }
 std::uint64_t dropped() { return dropped_count.load(); }
 std::uint64_t played() { return played_count.load(); }
 std::uint64_t nonzero() { return nonzero_count.load(); }
-std::uint64_t lock_misses() { return 0; } // Compatibility: device callback no longer takes the AI mutex.
 std::uint64_t waits() { return wait_count.load(); }
 double buffered_ms() { return 1000.0 * buffered_frames.load() / reported_rate.load(); }
 bool rebuffering() { return buffering.load(); }

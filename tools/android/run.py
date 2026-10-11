@@ -9,6 +9,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_apk
 from adb_client import ADB_TRANSFER_TIMEOUT, PACKAGE, device_command, parse_pids, single_pid
@@ -115,9 +117,7 @@ def main() -> None:
     parser.add_argument('--backend', choices=tuple(BACKENDS),
                         help='Request an SDL renderer and verify actual telemetry')
     args = parser.parse_args()
-    output=args.output.resolve()
-    if not output.is_relative_to(ROOT / 'local') or output.exists():
-        raise ValueError('Use a new ignored local/ output directory')
+    output=require_local(args.output, new=True, root=ROOT, what='Output')
     if not 20<=args.seconds<=900: raise ValueError('seconds must be in [20,900]')
     if args.home and args.seconds < 30: raise ValueError('Home/return requires at least 30 seconds for post-return telemetry')
     adb = device_command(args.adb, args.serial)

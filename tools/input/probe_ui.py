@@ -5,6 +5,9 @@ import argparse
 import json
 import os
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import struct
 import subprocess
 from probe_cursor import ROOT, ROM_SHA1, digest, require_runner_rom
@@ -16,9 +19,7 @@ def main() -> None:
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--route', choices=['mission','saved','hud','campaign'], default='mission')
     args = parser.parse_args()
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT/'local') or output.exists():
-        raise SystemExit('Choose a new private output under ignored local/')
+    output = require_local_or(sys.exit, args.output, new=True, root=ROOT, what='Private output')
     rom, flash = args.rom.resolve(strict=True), args.flash.resolve(strict=True)
     require_runner_rom(rom, 'UI')
     if flash.stat().st_size != 131072:

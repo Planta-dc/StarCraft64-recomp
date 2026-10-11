@@ -7,6 +7,8 @@ import json
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from adb_client import PACKAGE, device_command, parse_pids, single_pid
@@ -82,9 +84,7 @@ def main() -> None:
     parser.add_argument('--seconds', type=float, default=60)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT / 'local') or output.exists():
-        raise ValueError('Use a new ignored local/ output directory')
+    output = require_local(args.output, new=True, root=ROOT, what='Output')
     if not 20 <= args.seconds <= 300:
         raise ValueError('seconds must be in [20,300]')
     output.mkdir(parents=True)

@@ -20,9 +20,12 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+from rom_info import NTSC_U_SHA1 as ROM_SHA1
+
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
-ROM_SHA1 = "a36d91b5aac7bb95df0d7de5f9814f5270e25c2b"
 DEFAULT_INVENTORY = ROOT / "local/reports/libultra-resident/inventory.json"
 RECOMPILER_SOURCE = ROOT / "third_party/N64Recomp"
 RECOMPILER_BUILD = ROOT / "local/build/recompiler"
@@ -99,9 +102,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     rom = args.rom.resolve()
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT / "local"):
-        raise PipelineError("Generated output must remain under ignored local/")
+    output = require_local_or(sys.exit, args.output, root=ROOT, what="Generated output")
     check_inputs(rom, args.inventory.resolve())
 
     build_recompiler(args.jobs)

@@ -5,10 +5,13 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+from rom_info import NTSC_U_SHA1 as ROM_SHA1
 import struct
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM_SHA1 = 'a36d91b5aac7bb95df0d7de5f9814f5270e25c2b'
 # Original Right rejects ID zero before its existing circular list rotation.
 # Remove only that boundary check. Pick entry also consumes an optional host
 # minimap-navigation request on the guest thread; feedback itself stays read-only.
@@ -72,9 +75,7 @@ def main() -> None:
     parser.add_argument('--rom', required=True, type=Path)
     parser.add_argument('--config', required=True, type=Path)
     args = parser.parse_args()
-    config = args.config.resolve(strict=True)
-    if not config.is_relative_to(ROOT / 'local'):
-        raise SystemExit('Config must stay under ignored local/')
+    config = require_local_or(sys.exit, args.config.resolve(strict=True), root=ROOT, what='Config')
     original = config.read_text()
     if any(name+'(' in original for name in ('sc64_ui_font','sc64_ui_blit','sc64_ui_briefing','sc64_ui_hud_begin','sc64_ui_pick')):
         raise SystemExit('Config already has UI observers; use it to regenerate')

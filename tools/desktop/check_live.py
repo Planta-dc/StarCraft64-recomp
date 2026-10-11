@@ -5,6 +5,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 ROOT = Path(__file__).resolve().parents[2]
 FROZEN = ('fields', 'tasks', 'samples', 'audio_played_frames', 'audio_nonzero_frames')
@@ -61,9 +64,7 @@ def main() -> None:
     parser.add_argument('--require-resume', action='store_true',
                         help='Require measured nominal cadence after an observed pause/resume')
     args = parser.parse_args()
-    directory = args.run.resolve()
-    if not directory.is_relative_to(ROOT / 'local'):
-        raise SystemExit('Private live reports must remain below ignored local/')
+    directory = require_local_or(sys.exit, args.run, root=ROOT, what='Private live reports')
     receipt = json.loads((directory / 'run.json').read_text())
     if receipt.get('schema') != 3:
         raise ValueError('Run receipt predates the SDL3 shell; rerun with the current launcher')

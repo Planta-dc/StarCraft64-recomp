@@ -6,10 +6,11 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from rom_info import NTSC_U_SHA1 as ROM_SHA1
 from inspect_capture import find_task, inspect, iter_events, reconstruct
 from run_recompiler import inspect_output
-
-ROM_SHA1 = "a36d91b5aac7bb95df0d7de5f9814f5270e25c2b"
 
 
 def require(condition: bool, message: str) -> None:

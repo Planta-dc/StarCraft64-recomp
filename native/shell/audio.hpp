@@ -23,7 +23,6 @@ std::uint64_t underruns();
 std::uint64_t dropped();
 std::uint64_t played();
 std::uint64_t nonzero();
-std::uint64_t lock_misses();
 std::uint64_t waits();
 double buffered_ms();
 bool rebuffering();

@@ -6,9 +6,11 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import re
 import subprocess
-import sys
 from PIL import Image, ImageChops
 
 
@@ -55,9 +57,7 @@ def main():
     p.add_argument('--mode', choices=('gbi', 'rdp'), default='gbi')
     args = p.parse_args()
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root / 'local') or output.exists():
-        p.error('Use a new ignored local/ output')
+    output = require_local_or(p.error, args.output, new=True, root=root, what='Output')
     manifest = json.loads(args.manifest.read_text())
     if manifest['schema'] != 1 or manifest['threshold_rgb_psnr_db'] != 40:
         raise ValueError('Unrecognized schema or changed frozen threshold')

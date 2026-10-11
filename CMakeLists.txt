@@ -122,7 +122,7 @@ if(NOT SC64_BUILD_SHELL)
 endif()
 
 if(NOT EXISTS "${SC64_RUNTIME_DIR}/sc64-shell-patch.json")
-    message(FATAL_ERROR "Use the separate tools/desktop/patch_runtime.py dependency copy")
+    message(FATAL_ERROR "Use the separate tools/desktop/patch_shell_runtime.py dependency copy")
 endif()
 find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter)
 execute_process(COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/desktop/game_validation.py"

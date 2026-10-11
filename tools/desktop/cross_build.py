@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 sys.path.insert(0, str(ROOT / 'tools/desktop'))
 import bootstrap
-import patch_runtime
+import patch_shell_runtime
 from icon import installed as installed_icon
 from game_validation import validate_ui_hooks
 from private_paths import PACKAGE_FORBIDDEN_SUFFIXES
@@ -70,15 +70,17 @@ def main() -> None:
     parser.add_argument('target', choices=tuple(TARGETS))
     parser.add_argument('--configure-only', action='store_true')
     parser.add_argument('--jobs', type=int, default=6)
+    parser.add_argument('--build-type', choices=bootstrap.BUILD_TYPES, default=bootstrap.DEFAULT_BUILD_TYPE,
+                        help='CMake build type (default: %(default)s)')
     args = parser.parse_args()
     target = TARGETS[args.target]
     validate_ui_hooks(ROOT / 'local/generated/game')
     bootstrap.main()
-    patch_runtime.prepare(ROOT / 'local/deps/N64ModernRuntime', RUNTIME)
+    patch_shell_runtime.prepare(ROOT / 'local/deps/N64ModernRuntime', RUNTIME)
     build = ROOT / f'local/build/{args.target}'
     configure = ['cmake', '-S', str(ROOT), '-B', str(build), '-G', 'Ninja',
                  f'-DCMAKE_TOOLCHAIN_FILE={ROOT / target["toolchain"]}', '-DSC64_BUILD_SHELL=ON',
-                 f'-DSC64_RUNTIME_DIR={RUNTIME}', '-DCMAKE_BUILD_TYPE=RelWithDebInfo',
+                 f'-DSC64_RUNTIME_DIR={RUNTIME}', f'-DCMAKE_BUILD_TYPE={args.build_type}',
                  # Empty when no icon was generated, which also clears a stale CMake cache entry.
                  f'-DSC64_ICON_RC={installed_icon("StarCraft64.rc") or ""}']
     compile_ = ['cmake', '--build', str(build), '--target', 'sc64_app', '-j', str(args.jobs)]
@@ -89,6 +91,7 @@ def main() -> None:
         return
     run(wrap(compile_))
     dist = ROOT / 'local/dist'
+    dist.mkdir(parents=True, exist_ok=True)
     package = dist / f'StarCraft64-{args.target}'
     with tempfile.TemporaryDirectory(prefix='.sc64-cross-', dir=dist) as temporary:
         staged = Path(temporary) / package.name
@@ -102,7 +105,7 @@ def main() -> None:
         if args.target == 'linux' and (icon := installed_icon('StarCraft64.png')):
             shutil.copy2(icon, staged / icon.name)
         members = sorted(staged.iterdir())
-        receipt = {'schema': 1, 'profile': target['profile'], 'cloud_upload': False,
+        receipt = {'schema': 1, 'profile': target['profile'], 'build_type': args.build_type, 'cloud_upload': False,
                    'binary_sha256': sha256(binary), 'sdl3_version': bootstrap.SDL_VERSION,
                    'sdl3_sha256': sha256(bootstrap.SDL_ARCHIVE), 'files_sha256': audit(members),
                    'toolchain': subprocess.run(wrap([target['strip'].replace('strip', 'g++'), '--version']),

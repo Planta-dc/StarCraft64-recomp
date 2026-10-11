@@ -11,16 +11,16 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+import bootstrap
+import patch_shell_runtime
+from bootstrap import FONT, FONT_LICENSE, MINIAUDIO, MINIAUDIO_VERSION, SDL_ARCHIVE, SDL_VERSION, STB_TRUETYPE
 from game_validation import validate_ui_hooks
 from icon import installed as installed_icon
 
 ROOT = Path(__file__).resolve().parents[2]
-TOOLCHAINS = ROOT / 'local/toolchains'
-SDL_VERSION = '3.4.18'
-SDL_ARCHIVE = TOOLCHAINS / f'sdl3/SDL3-{SDL_VERSION}.tar.gz'
-FONT = TOOLCHAINS / 'dejavu/DejaVuSansMono-Bold.ttf'
-FONT_LICENSE = TOOLCHAINS / 'dejavu/LICENSE'
 RUNTIME = ROOT / 'local/deps/N64ModernRuntime-shell'
+LLVM_BIN = Path('/opt/homebrew/opt/llvm/bin')
+MACOS_DEPLOYMENT_TARGET = '13.0'
 
 BACKUP_PREFIX = '.sc64-build-'
 PREVIOUS_SUFFIX = '-previous.app'
@@ -59,17 +59,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--configure-only', action='store_true')
     parser.add_argument('--jobs', type=int, default=8)
+    parser.add_argument('--build-type', choices=bootstrap.BUILD_TYPES, default=bootstrap.DEFAULT_BUILD_TYPE,
+                        help='CMake build type (default: %(default)s)')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise SystemExit('This tool builds the macOS arm64 profile; see tools/windows and tools/linux')
     validate_ui_hooks(ROOT / 'local/generated/game')
-    run(['python3', str(ROOT / 'tools/desktop/patch_runtime.py'), '--output', str(RUNTIME)])
+    if not (LLVM_BIN / 'clang++').is_file():
+        raise SystemExit(f'Homebrew LLVM is required: {LLVM_BIN}/clang++ not found (brew install llvm)')
+    bootstrap.main()
+    patch_shell_runtime.prepare(ROOT / 'local/deps/N64ModernRuntime', RUNTIME)
     build = ROOT / 'local/build/desktop'
     run(['cmake', '-S', str(ROOT), '-B', str(build), '-G', 'Ninja',
          '-DSC64_BUILD_SHELL=ON', '-DSC64_RUNTIME_DIR=' + str(RUNTIME),
-         '-DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++',
-         '-DCMAKE_C_COMPILER=/opt/homebrew/opt/llvm/bin/clang',
-         '-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0', '-DCMAKE_BUILD_TYPE=RelWithDebInfo'])
+         f'-DCMAKE_CXX_COMPILER={LLVM_BIN / "clang++"}',
+         f'-DCMAKE_C_COMPILER={LLVM_BIN / "clang"}',
+         f'-DCMAKE_OSX_DEPLOYMENT_TARGET={MACOS_DEPLOYMENT_TARGET}', f'-DCMAKE_BUILD_TYPE={args.build_type}'])
     if args.configure_only:
         return
     run(['cmake', '--build', str(build), '--target', 'sc64_app', '-j', str(args.jobs)])
@@ -88,15 +93,15 @@ def main() -> None:
             'CFBundleExecutable': 'SC64', 'CFBundleIdentifier': 'com.nomadic.sc64.personal',
             'CFBundleName': 'StarCraft64', 'CFBundleDisplayName': 'StarCraft 64',
             'CFBundlePackageType': 'APPL', 'NSHighResolutionCapable': True,
-            'LSMinimumSystemVersion': '13.0', 'NSPrincipalClass': 'NSApplication'}
+            'LSMinimumSystemVersion': MACOS_DEPLOYMENT_TARGET, 'NSPrincipalClass': 'NSApplication'}
         if (staged / 'Contents/Resources/StarCraft64.icns').exists():
             plist['CFBundleIconFile'] = 'StarCraft64'
         (staged / 'Contents/Info.plist').write_bytes(plistlib.dumps(plist))
-        build_receipt = {'schema': 2, 'profile': 'arm64-macos', 'cloud_upload': False,
+        build_receipt = {'schema': 2, 'profile': 'arm64-macos', 'build_type': args.build_type, 'cloud_upload': False,
             'binary_sha256': sha256(staged / 'Contents/MacOS/SC64'),
             'sdl3_version': SDL_VERSION, 'sdl3_sha256': sha256(SDL_ARCHIVE),
-            'miniaudio_version': '0.11.23', 'miniaudio_sha256': sha256(TOOLCHAINS / 'miniaudio.h'),
-            'stb_truetype_sha256': sha256(TOOLCHAINS / 'stb/stb_truetype.h'),
+            'miniaudio_version': MINIAUDIO_VERSION, 'miniaudio_sha256': sha256(MINIAUDIO),
+            'stb_truetype_sha256': sha256(STB_TRUETYPE),
             'resources_sha256': resource_hashes(staged / 'Contents/Resources')}
         publish_bundle(staged, app, app.parent / (Path(temporary).name + PREVIOUS_SUFFIX))
     receipt.write_text(json.dumps(build_receipt, indent=2) + '\n')

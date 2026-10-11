@@ -49,8 +49,6 @@ struct Texture {
     Tmem memory;
     unsigned tlut_mode = 0;
     std::vector<Color> pixels;
-    unsigned atlas_width = 0, atlas_height = 0;
-    std::vector<std::uint8_t> rgba8;
 };
 struct Rectangle {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0; // screen signed 10.2, exclusive ends

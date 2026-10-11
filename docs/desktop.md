@@ -23,7 +23,7 @@ Android uses the same shell; see [android.md](android.md).
 | Module | Responsibility |
 |---|---|
 | `native/shell/session.*` | SHA-1 import, private Flash storage, native guest boot, input callbacks, strict microcode identity, owned task snapshots |
-| `native/shell/clock_bridge.hpp`, `tools/desktop/patch_runtime.py` | Separate prepared runtime copy (`N64ModernRuntime-shell`); cooperative guest/VI/timer gates and virtual clock |
+| `native/shell/clock_bridge.hpp`, `tools/desktop/patch_shell_runtime.py` | Separate prepared runtime copy (`N64ModernRuntime-shell`); cooperative guest/VI/timer gates and virtual clock |
 | `native/shell/audio.*`, `pcm_*.hpp` | Independent miniaudio device, timed two-entry guest AI FIFO, bounded PCM ring and stereo resampling |
 | `native/shell/native.*` | Presentation selection (VI/CPU-swap scanout), lifecycle pause causes, cursor/rumble policy, GPU probe and frame traces, telemetry |
 | `native/shell/scripts.*` | Controller merge, ROM startup, input recipes, overlay model (formerly `host.script`, `touch.gui_script`, `status.gui_script`) |

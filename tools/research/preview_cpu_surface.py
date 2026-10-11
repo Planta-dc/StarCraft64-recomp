@@ -2,6 +2,9 @@
 """Inspect a traced CI8 CPU surface with its traced RGBA16 TLUT (private PNG)."""
 import argparse
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import struct
 import zlib
 
@@ -20,9 +23,7 @@ def main():
     p.add_argument('--height', type=integer, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
-    private = Path(__file__).resolve().parents[2] / 'local'
-    if not args.output.resolve().is_relative_to(private):
-        p.error('retail-derived PNG must stay under ignored local/')
+    require_local_or(p.error, args.output, root=Path(__file__).resolve().parents[2], what='Retail-derived PNG')
     data = args.ram.read_bytes()
     if not (0 < args.width <= 2048 and 0 < args.height <= 2048 and
             0 <= args.image <= len(data) - args.width * args.height and

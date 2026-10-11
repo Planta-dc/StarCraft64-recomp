@@ -5,6 +5,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -114,9 +117,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run', type=Path)
     args = parser.parse_args()
-    directory = args.run.resolve()
-    if not directory.is_relative_to(ROOT / 'local'):
-        raise SystemExit('Reports must remain under ignored local/')
+    directory = require_local_or(sys.exit, args.run, root=ROOT, what='Reports')
     receipt = json.loads((directory / 'run.json').read_text())
     raw = (directory / 'engine.log').read_bytes()
     source = receipt['inputs']['inputs']

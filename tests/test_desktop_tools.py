@@ -18,7 +18,7 @@ def module(name):
     sys.modules[spec.name] = result
     spec.loader.exec_module(result)
     return result
-patch = module('patch_runtime')
+patch = module('patch_shell_runtime')
 gpu = module('check_gpu')
 live = module('check_live')
 launcher = module('run')

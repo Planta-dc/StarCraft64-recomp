@@ -1,4 +1,5 @@
 #include "ui_feedback.hpp"
+#include "guest_addresses.hpp"
 #include "minimap.hpp"
 #include <recomp.h>
 #include <algorithm>
@@ -6,6 +7,7 @@
 #include <atomic>
 
 namespace {
+namespace guest = sc64::runtime::guest;
 struct FontItem { sc64::runtime::UiItem item; std::uint32_t pixels; };
 std::mutex mutex;
 std::vector<FontItem> font_items;
@@ -65,8 +67,8 @@ extern "C" void sc64_ui_pick(std::uint8_t* ram, recomp_context* ctx, unsigned ki
     // 8001AD78 follows the game's exact cursor hit test (8008A688). Observe
     // its return value before the next call clobbers v0; never call guest code.
     std::optional<sc64::runtime::CursorPick> observed;
-    if (kind<=1 && half(ram,0x800a5ab4)==3 && byte(ram,0x800a5b0e)==0
-        && !byte(ram,0x800afefc) && !half(ram,0x800f0c20) && !byte(ram,0x800c6a64)) {
+    if (kind<=1 && half(ram,guest::game_mode)==3 && byte(ram,0x800a5b0e)==0
+        && !byte(ram,guest::split_screen) && !half(ram,0x800f0c20) && !byte(ram,0x800c6a64)) {
         auto unit=[](std::uint32_t a) { return address(a,0x118) && !(a&3); };
         auto flags=[&](std::uint32_t a) {
             auto type=unsigned(half(ram,a+0x64));
@@ -107,7 +109,7 @@ extern "C" void sc64_ui_pick(std::uint8_t* ram, recomp_context* ctx, unsigned ki
 }
 
 extern "C" void sc64_ui_hud_begin(std::uint8_t* ram, recomp_context* ctx) {
-    if (ctx->r30 != 0 || half(ram,0x800a5ab4)!=3 || byte(ram,0x800afefc)) return;
+    if (ctx->r30 != 0 || half(ram,guest::game_mode)!=3 || byte(ram,guest::split_screen)) return;
     std::lock_guard lock(mutex);
     hud_items.clear(); // canvas is cleared by the original immediately before this hook
     hud_complete=false;
@@ -122,7 +124,7 @@ extern "C" void sc64_ui_hud_font(std::uint8_t* ram, recomp_context* ctx, unsigne
     if (kind==2) { if (!b_hint_pending) return; b_hint_pending=false; }
     else if (kind!=0) return;
     if (ctx->r30!=0
-        || half(ram,0x800a5ab4)!=3 || byte(ram,0x800afefc)) return;
+        || half(ram,guest::game_mode)!=3 || byte(ram,guest::split_screen)) return;
     const auto canvas=word(ram,0x800afd60);
     if (!address(canvas,8) || canvas!=0x800de1e0) return;
     const auto pixels=word(ram,canvas+4);
@@ -151,7 +153,7 @@ extern "C" void sc64_ui_hud_font(std::uint8_t* ram, recomp_context* ctx, unsigne
 }
 
 extern "C" void sc64_ui_hud_end(std::uint8_t* ram, recomp_context* ctx) {
-    if (ctx->r30!=0 || half(ram,0x800a5ab4)!=3 || byte(ram,0x800afefc)
+    if (ctx->r30!=0 || half(ram,guest::game_mode)!=3 || byte(ram,guest::split_screen)
         || word(ram,0x800afd60)!=0x800de1e0) return;
     std::lock_guard lock(mutex);
     // Later icons/text overlap earlier label boxes. Stamp only after the entire
@@ -161,7 +163,7 @@ extern "C" void sc64_ui_hud_end(std::uint8_t* ram, recomp_context* ctx) {
 }
 
 extern "C" void sc64_ui_hud_present(std::uint8_t* ram, recomp_context* ctx) {
-    if (half(ram,0x800a5ab4)!=3 || byte(ram,0x800afefc)
+    if (half(ram,guest::game_mode)!=3 || byte(ram,guest::split_screen)
         || std::uint32_t(ctx->r4)!=0x800de1e0 || ctx->r7<=0 || ctx->r7>255) return;
     const auto pixels=word(ram,0x800de1e4), context=sc64::runtime::hud_context(ram);
     if (!address(pixels,136*60) || half(ram,0x800de1e0)!=136 || half(ram,0x800de1e2)!=60) return;
@@ -187,7 +189,7 @@ extern "C" void sc64_ui_hud_present(std::uint8_t* ram, recomp_context* ctx) {
 }
 
 extern "C" void sc64_ui_font(std::uint8_t* ram, recomp_context* ctx, unsigned kind) {
-    if ((word(ram, 0x800a5ab4) >> 16) != 4 || kind > 7) return;
+    if ((word(ram, guest::game_mode) >> 16) != 4 || kind > 7) return;
     // Encyclopedia (menu 8) article links: kinds 5, 6 and 7 are the made-by,
     // makes and needs row draws of one article. s4 counts links from zero; it is
     // already advanced at the made-by and needs sites but not at the makes site.
@@ -231,7 +233,7 @@ extern "C" void sc64_ui_font(std::uint8_t* ram, recomp_context* ctx, unsigned ki
 }
 
 extern "C" void sc64_ui_blit(std::uint8_t* ram, recomp_context* ctx) {
-    if ((word(ram, 0x800a5ab4) >> 16) != 4 || ctx->r5 != 0) return;
+    if ((word(ram, guest::game_mode) >> 16) != 4 || ctx->r5 != 0) return;
     auto image = std::uint32_t(ctx->r4), sp = std::uint32_t(ctx->r29);
     if (!address(image, 16) || !address(sp, 20)) return;
     auto pixels = word(ram, image + 12);
@@ -255,7 +257,7 @@ extern "C" void sc64_ui_blit(std::uint8_t* ram, recomp_context* ctx) {
 }
 
 extern "C" void sc64_ui_main(std::uint8_t* ram, recomp_context* ctx, unsigned kind) {
-    if (half(ram,0x800a5ab4)!=4 || word(ram,0x800d1170)!=0 || kind>3) return;
+    if (half(ram,guest::game_mode)!=4 || word(ram,0x800d1170)!=0 || kind>3) return;
     const auto sp=std::uint32_t(ctx->r29);
     if (!address(sp,0x300)) return;
     const auto campaign=word(ram,sp+0x88);

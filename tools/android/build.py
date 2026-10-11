@@ -14,7 +14,7 @@ from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/desktop'))
 import bootstrap
-import patch_runtime
+import patch_shell_runtime
 from game_validation import validate_ui_hooks
 import check_apk
 from icon import installed as installed_icon
@@ -80,8 +80,12 @@ def main() -> None:
     parser.add_argument('--sdk', type=Path, default=Path.home() / 'Library/Android/sdk')
     parser.add_argument('--configure-only', action='store_true')
     parser.add_argument('--jobs', type=int, default=8)
+    parser.add_argument('--build-type', choices=bootstrap.BUILD_TYPES, default=bootstrap.DEFAULT_BUILD_TYPE,
+                        help='CMake build type (default: %(default)s)')
     parser.add_argument('--render-driver', choices=RENDER_DRIVERS, default=DEFAULT_RENDER_DRIVER,
                         help='SDL renderer written into assets/sc64/config.ini (non-default drivers get a separate APK)')
+    parser.add_argument('--debuggable', action='store_true',
+                        help='Package android:debuggable (adb run-as access to app data, debugger attach); off by default')
     parser.add_argument('--bundle-rom', type=Path, help='Include your verified ROM in this personal APK and autostart from assets')
     args = parser.parse_args()
     bundled_rom = None
@@ -99,12 +103,12 @@ def main() -> None:
     build_tools = android_sdk / 'build-tools' / BUILD_TOOLS
     android_jar = android_sdk / f'platforms/android-{TARGET_API}/android.jar'
     bootstrap.main()
-    patch_runtime.prepare(ROOT / 'local/deps/N64ModernRuntime', RUNTIME)
+    patch_shell_runtime.prepare(ROOT / 'local/deps/N64ModernRuntime', RUNTIME)
     build = ROOT / 'local/build/android'
     run(['cmake', '-S', ROOT / 'native/android', '-B', build, '-G', 'Ninja',
          f'-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake',
          '-DANDROID_ABI=arm64-v8a', f'-DANDROID_PLATFORM=android-{API}', '-DANDROID_STL=c++_static',
-         '-DCMAKE_BUILD_TYPE=RelWithDebInfo'])
+         f'-DCMAKE_BUILD_TYPE={args.build_type}'])
     if args.configure_only: return
     run(['cmake', '--build', build, '--target', 'sc64_app', '-j', str(args.jobs)])
     java_env = dict(os.environ, JAVA_HOME=str(JDK))
@@ -123,9 +127,9 @@ def main() -> None:
              '--manifest', ROOT / 'native/android/AndroidManifest.xml',
              '--min-sdk-version', str(API), '--target-sdk-version', str(TARGET_API),
              '--version-code', str(VERSION_CODE), '--version-name', VERSION_NAME,
-             # Debuggable like the former debug variant: permits a data-preserving
-             # rollback install (adb install -r -d) of an earlier build.
-             '--debug-mode', staging / 'res.zip'])
+             # Release packaging by default: no run-as access to the ROM copy and
+             # saves. --debuggable also permits `adb install -r -d` rollbacks.
+             *(['--debug-mode'] if args.debuggable else []), staging / 'res.zip'])
         # SDL's Java activity layer from the same pinned release, plus ours.
         classes = staging / 'classes'; classes.mkdir()
         java_sources = sorted(SDL_JAVA.rglob('*.java')) + sorted((ROOT / 'native/android/java').rglob('*.java'))
@@ -170,7 +174,7 @@ def main() -> None:
                   'version_code': VERSION_CODE, 'render_driver': args.render_driver,
                   'render_driver_chain': RENDER_DRIVER_CHAINS[args.render_driver], 'sdl3_version': bootstrap.SDL_VERSION,
                   'sdl3_sha256': digest(bootstrap.SDL_ARCHIVE),
-                  'cloud_upload': False, 'rom_included': bundled_rom is not None, 'generated_c_included': False,
+                  'cloud_upload': False, 'build_type': args.build_type, 'debuggable': args.debuggable, 'rom_included': bundled_rom is not None, 'generated_c_included': False,
                   'package': 'com.nomadic.sc64.personal',
                   'library_sha256': digest(library), 'apk_sha256': digest(signed),
                   'apk_bytes': signed.stat().st_size, 'on_device_accepted': False}

@@ -20,6 +20,10 @@ RUN_SECONDS ?= 0
 SMOKE_SECONDS ?= 30
 PAGE_SIZE ?= 0
 ANDROID_BACKEND ?=
+# 1 packages android:debuggable (run-as, debugger, `adb install -r -d` rollback).
+ANDROID_DEBUGGABLE ?= 0
+# CMake build type of the app builds (macOS, Windows, Linux, Android).
+BUILD_TYPE ?= Release
 BASELINE_REPLAY ?=
 RENDERER_MANIFEST ?= local/inputs/renderer/manifest.json
 RUN_ID := $(shell date +%Y%m%d-%H%M%S)
@@ -31,7 +35,7 @@ endif
 endif
 export ROM BUNDLE_ROM SERIAL ANDROID_SDK APK STORAGE REPORT RUN_SECONDS SMOKE_SECONDS JOBS
 export BASELINE_REPLAY RENDERER_MANIFEST
-export PAGE_SIZE ANDROID_BACKEND
+export PAGE_SIZE ANDROID_BACKEND ANDROID_DEBUGGABLE BUILD_TYPE
 
 .PHONY: help bootstrap recompile build build-desktop configure-desktop run run-desktop build-windows build-linux \
         build-android build-android-opengles icon configure-android check-apk devices install-android \
@@ -46,6 +50,8 @@ help:
 	  'make build-linux            Cross-build the Linux x86_64 tar.gz (local Docker)' \
 	  'make build-android          Build and audit the personal arm64 APK locally' \
 	  '  BUNDLE_ROM=1 ROM="/path/game.z64" includes ROM and autostarts from APK assets' \
+	  'BUILD_TYPE=Release|RelWithDebInfo|Debug   CMake build type of app builds (default Release)' \
+	  '  ANDROID_DEBUGGABLE=1 packages a debuggable APK (default: release, no run-as access)' \
 	  'make build-android-opengles Same with OpenGL ES for emulators (local/dist/StarCraft64-android-opengles2.apk);' \
 	  '  pass ANDROID_RENDER_DRIVER=opengles2 to install/run/smoke/check-apk to use that APK' \
 	  'make icon ROM="/path/game.z64"  Convert the original title art into local/icons (used by every build)' \
@@ -81,11 +87,11 @@ recompile:
 
 build: build-desktop
 
-build-desktop: bootstrap
-	$(PYTHON) tools/desktop/build.py
+build-desktop:
+	$(PYTHON) tools/desktop/build.py --build-type "$$BUILD_TYPE"
 
-configure-desktop: bootstrap
-	$(PYTHON) tools/desktop/build.py --configure-only
+configure-desktop:
+	$(PYTHON) tools/desktop/build.py --build-type "$$BUILD_TYPE" --configure-only
 
 run: run-desktop
 
@@ -94,11 +100,11 @@ run-desktop:
 	$(PYTHON) tools/desktop/run.py "$$@" --storage "$$STORAGE" \
 	  --seconds "$$RUN_SECONDS" --output "$${REPORT:-local/reports/make-desktop-$(RUN_ID)}"
 
-build-windows: bootstrap
-	$(PYTHON) tools/desktop/cross_build.py windows --jobs "$$JOBS"
+build-windows:
+	$(PYTHON) tools/desktop/cross_build.py windows --jobs "$$JOBS" --build-type "$$BUILD_TYPE"
 
-build-linux: bootstrap
-	$(PYTHON) tools/desktop/cross_build.py linux --jobs "$$JOBS"
+build-linux:
+	$(PYTHON) tools/desktop/cross_build.py linux --jobs "$$JOBS" --build-type "$$BUILD_TYPE"
 
 build-android:
 	@set --; if [ -n "$$ANDROID_SDK" ]; then set -- --sdk "$$ANDROID_SDK"; fi; \
@@ -106,14 +112,15 @@ build-android:
 	  test -n "$$ROM" || { printf '%s\n' 'Set ROM to your dump when BUNDLE_ROM=1.' >&2; exit 2; }; \
 	  set -- "$$@" --bundle-rom "$$ROM"; fi; \
 	if [ -n "$$ANDROID_RENDER_DRIVER" ]; then set -- "$$@" --render-driver "$$ANDROID_RENDER_DRIVER"; fi; \
-	$(PYTHON) tools/android/build.py "$$@" --jobs "$$JOBS"
+	if [ "$$ANDROID_DEBUGGABLE" = 1 ]; then set -- "$$@" --debuggable; fi; \
+	$(PYTHON) tools/android/build.py "$$@" --jobs "$$JOBS" --build-type "$$BUILD_TYPE"
 
 build-android-opengles:
 	@$(MAKE) --no-print-directory build-android ANDROID_RENDER_DRIVER=opengles2
 
 configure-android:
 	@set --; if [ -n "$$ANDROID_SDK" ]; then set -- --sdk "$$ANDROID_SDK"; fi; \
-	$(PYTHON) tools/android/build.py "$$@" --jobs "$$JOBS" --configure-only
+	$(PYTHON) tools/android/build.py "$$@" --jobs "$$JOBS" --build-type "$$BUILD_TYPE" --configure-only
 
 check-apk:
 	@set --; if [ "$$BUNDLE_ROM" = 1 ]; then set -- --bundled-rom; fi; \

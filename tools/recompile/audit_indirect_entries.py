@@ -13,6 +13,9 @@ import hashlib
 import json
 import struct
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 
 def propagate(registers: dict[int, int], word: int) -> None:
@@ -117,8 +120,7 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    if not args.output.resolve().is_relative_to(root / "local"):
-        raise SystemExit("Private audit output must remain under ignored local/")
+    require_local_or(sys.exit, args.output, root=root, what="Private audit output")
     rom = args.rom.read_bytes()
     manifest = json.loads(args.manifest.read_text())
     if hashlib.sha1(rom).hexdigest() != manifest["rom_sha1"]:

@@ -15,6 +15,7 @@ ignored local/ tree.
 """
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 import struct
@@ -27,6 +28,8 @@ from rom_info import RomError, load_ntsc_u
 DEFAULT_OUTPUT = ROOT / "local/extracted/sc64-usa"
 
 FLAG_UNCOMPRESSED = 0x08
+
+log = logging.getLogger("bolt_extract")
 
 
 class BoltError(Exception):
@@ -161,25 +164,26 @@ def is_tbl(d):
 
 
 def is_grp(d):
-    # PC StarCraft GRP: LE header, LE frame table
+    # PC StarCraft GRP: 6-byte LE header (frames, width, height), then one
+    # 8-byte LE frame record (x, y, w, h, u32 data offset) per frame.
     if len(d) <= 16:
         return False
     frames = u16le(d, 0)
     w, h = u16le(d, 2), u16le(d, 4)
     if not frames or not w or not h:
         return False
-    data_start = 14 + (frames - 1) * 8
+    data_start = 6 + frames * 8
     if data_start + 1 >= len(d):
         return False
-    if u32le(d, 8 + 4) != data_start:
+    if u32le(d, 6 + 4) != data_start:
         return False
     for i in range(frames):
-        fx, fy, fw, fh = d[8 + i * 8:12 + i * 8]
+        fx, fy, fw, fh = d[6 + i * 8:10 + i * 8]
         if not fw or not fh:
             return False
         if fx + fw > w or fy + fh > h:
             return False
-        off = u32le(d, 8 + i * 8 + 4)
+        off = u32le(d, 6 + i * 8 + 4)
         if off < data_start or off >= len(d):
             return False
     return True
@@ -279,7 +283,7 @@ def extract(rom, bolt_begin, entries_base, count, out_dir, rel_path, manifest, s
                 try:
                     data = decompress_n64(rom, bolt_begin + e.offset, e.size)
                 except BoltError as ex:
-                    print("  ! decompress failed %s/%08X: %s" % ("/".join(rel_path), e.hash, ex))
+                    log.warning("decompress failed %s/%08X: %s", "/".join(rel_path), e.hash, ex)
                     data = b""
             ext = guess_type(data)
             name = "%08X.%s" % (e.hash, ext)
@@ -300,6 +304,7 @@ def main(argv=None):
     parser.add_argument("output", type=Path, nargs="?", default=DEFAULT_OUTPUT,
                         help="new directory under local/ (default: local/extracted/sc64-usa)")
     args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
         out_path = require_local(args.output, new=True, root=ROOT, what="Extracted asset output")
         _, rom = load_ntsc_u(args.rom)

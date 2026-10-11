@@ -14,10 +14,12 @@ import sys
 import struct
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+from rom_info import NTSC_U_SHA1 as ROM_SHA1
 from splat_to_syms import read_functions, render_sections
 from discover_polls import find_memory_waits
 
-ROM_SHA1 = "a36d91b5aac7bb95df0d7de5f9814f5270e25c2b"
 SECTIONS = [
     {"name": "resident", "rom": 0x1000, "vram": 0x80000400, "size": 0xD5640,
      "code": [(0x1000, 0x1118), (0x5370, 0x8F8F0), (0x91290, 0xA2360)]},
@@ -62,9 +64,7 @@ def main() -> None:
     if hashlib.sha1(rom_bytes).hexdigest() != ROM_SHA1:
         raise SystemExit("Unsupported ROM: expected the verified NTSC-U z64 profile")
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root / "local"):
-        raise SystemExit("ROM-derived output must remain under the ignored local/ directory")
+    output = require_local_or(sys.exit, args.output, root=root, what="ROM-derived output")
     output.mkdir(parents=True, exist_ok=False)
     inventory = json.loads(args.inventory.read_text())
     if inventory["rom_sha1"] != ROM_SHA1:

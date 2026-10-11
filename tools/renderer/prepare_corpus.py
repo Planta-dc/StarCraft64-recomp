@@ -5,8 +5,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import struct
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+import struct
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'research'))
 from summarize_capture import RdpStream, iter_events
 
@@ -68,9 +70,7 @@ def main():
     parser.add_argument('--fenced-captures', type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root / 'local') or output.exists():
-        parser.error('Use a new ignored local/ output directory')
+    output = require_local_or(parser.error, args.output, new=True, root=root, what='Output')
     prepared = []
     cases = CASES
     capture_root = args.captures

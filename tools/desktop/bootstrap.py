@@ -2,6 +2,7 @@
 """Fetch only pinned public shell dependencies into ignored local/toolchains."""
 from __future__ import annotations
 import hashlib
+import logging
 import os
 import tarfile
 import tempfile
@@ -11,7 +12,14 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLCHAINS = ROOT / 'local/toolchains'
+log = logging.getLogger('bootstrap')
 SDL_VERSION = '3.4.18'
+MINIAUDIO_VERSION = '0.11.23'
+# Shipped builds are optimized release builds; the others are opt-in for debugging.
+BUILD_TYPES = ('Release', 'RelWithDebInfo', 'Debug')
+DEFAULT_BUILD_TYPE = BUILD_TYPES[0]
+MINIAUDIO = TOOLCHAINS / 'miniaudio.h'
+STB_TRUETYPE = TOOLCHAINS / 'stb/stb_truetype.h'
 SDL_ARCHIVE = TOOLCHAINS / f'sdl3/SDL3-{SDL_VERSION}.tar.gz'
 SDL_DIR = TOOLCHAINS / f'sdl3/SDL3-{SDL_VERSION}'
 STB_COMMIT = '2c980bb59875b0d32144a71867fbdebb2f77cd20'
@@ -21,13 +29,13 @@ FONT_LICENSE = TOOLCHAINS / 'dejavu/LICENSE'
 FILES = (
     (SDL_ARCHIVE, f'https://github.com/libsdl-org/SDL/releases/download/release-{SDL_VERSION}/SDL3-{SDL_VERSION}.tar.gz',
      '9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3'),
-    (TOOLCHAINS / 'stb/stb_truetype.h',
+    (STB_TRUETYPE,
      f'https://raw.githubusercontent.com/nothings/stb/{STB_COMMIT}/stb_truetype.h',
      'ecd30b05e0dd4fea3a13c26810dd9e1992dc379049482c393d5a19e6b5090aab'),
     (FONT_ARCHIVE,
      'https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.zip',
      '7576310b219e04159d35ff61dd4a4ec4cdba4f35c00e002a136f00e96a908b0a'),
-    (TOOLCHAINS / 'miniaudio.h', 'https://raw.githubusercontent.com/mackron/miniaudio/0.11.23/miniaudio.h',
+    (MINIAUDIO, f'https://raw.githubusercontent.com/mackron/miniaudio/{MINIAUDIO_VERSION}/miniaudio.h',
      '7e4f3f13c8fe66df2080ac3dd12a89193e3c2463cb7f067c798abd7331cd8ee6'),
 )
 
@@ -46,7 +54,7 @@ def fetch(path: Path, url: str, expected: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.download-', dir=path.parent) as directory:
         temporary = Path(directory) / 'payload'
-        print(f'Downloading {url}', flush=True)
+        log.info('Downloading %s', url)
         with urllib.request.urlopen(url, timeout=60) as response, temporary.open('wb') as output:
             while chunk := response.read(1024 * 1024):
                 output.write(chunk)
@@ -96,6 +104,8 @@ def extract_font(archive_path: Path) -> None:
         publish(FONT_LICENSE, archive.read('dejavu-fonts-ttf-2.37/LICENSE'))
 
 def main() -> None:
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO, format='%(message)s')
     for path, url, expected in FILES:
         fetch(path, url, expected)
     extract_sdl(SDL_ARCHIVE, SDL_DIR)

@@ -37,7 +37,8 @@ areas, audio rerouting, other devices and sustained thermal runs stay separate.
 ## Verified interfaces
 
 Current shell (ADR-074): `Sc64Activity.getArguments()` forwards the string-array
-extra `com.nomadic.sc64.ARGUMENTS`; `tools/android/run.py --backend` passes
+extra `com.nomadic.sc64.ARGUMENTS` (only `sc64.render_driver` is accepted);
+`tools/android/run.py --backend` passes
 `--config=sc64.render_driver=opengles2|vulkan`, which selects the SDL renderer
 by name before creation. The active renderer is published as `render_driver` in
 compact Android telemetry, and the tool compares that observed value rather than

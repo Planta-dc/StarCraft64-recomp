@@ -127,7 +127,6 @@ void gbi_fixtures() {
     auto list=interpret_gbi(ram,0x1000);
     require(list.rectangles.size()==1,"GBI rectangle packet assembly");
     put(ram,0x4000,0xffffffff); // owned initial memory must survive caller reuse
-    require(list.textures[0].rgba8.size()==4,"Owned decoded RGBA8 atlas");
     DrawList batched=list;batched.rectangles.push_back(list.rectangles[0]);
     batched.rectangles.push_back(list.rectangles[0]);
     batched.rectangles.back().state.primitive.g=16;
@@ -184,7 +183,7 @@ void interpreter_checkpoint_fixtures() {
         // checkpoints must continue reading the complete owned snapshot.
         ram[0x10000]=0;
     });
-    require(polls>64,"Checkpoints occur within background decode/hash/atlas loops");
+    require(polls>64,"Checkpoints occur within background decode/hash loops");
     require(serviced.opcodes==original.opcodes && serviced.textures[0].key==original.textures[0].key,
         "Scheduling does not change display-list commands or content keys");
     require(render_software(serviced).ram==render_software(original).ram,
@@ -217,14 +216,15 @@ void texture_key_fixtures() {
     for(unsigned i=0;i<256;++i)for(unsigned j=0;j<4;++j)ram[0x10000+i*4+j]=(i+j*79)&255;
     auto background=interpret_gbi(ram,0x1000);
     require(background.textures.size()==1 && background.rectangles.size()==2,
-        "Identical backgrounds reuse one owned atlas");
+        "Identical backgrounds reuse one owned texture");
     const auto& bg=background.textures[0];
     require(bg.key==legacy_texture_key(bg),"All channel values preserve the historical 64-bit key");
-    require(bg.rgba8==std::vector<std::uint8_t>(ram.begin()+0x10000,ram.begin()+0x10400),
-        "Background atlas bytes equal the independently authored RGBA32 source");
+    for(unsigned i=0;i<256;++i)
+        require(bg.pixels[i]==Color{ram[0x10000+i*4],ram[0x10000+i*4+1],ram[0x10000+i*4+2],ram[0x10000+i*4+3]},
+            "Background pixels equal the independently authored RGBA32 source");
 
     // CI8 snapshots repeat, then a palette load changes the same source index.
-    // Reuse must compare semantic input before skipping derived atlas work.
+    // Reuse must compare semantic input before sharing a texture.
     a=0x1000;
     command(ram,a,0xff100003,0x20000);command(ram,a,0xed000000,0x00010004);
     command(ram,a,0xef208000,0); // COPY, RGBA16 TLUT
@@ -243,18 +243,18 @@ void texture_key_fixtures() {
     unsigned double_polls=0;auto repeated=interpret_gbi(ram,0x1000,[&]{++double_polls;});
     require(repeated.textures.size()==1 && repeated.rectangles[1].texture==0,
         "Repeated CI8 rectangles reuse the same collision-checked texture");
-    require(double_polls-single_polls==9,"Repeated TMEM snapshot skips atlas work but retains hash/command checkpoints");
-    require(repeated.textures[0].rgba8==single.textures[0].rgba8,"Reused physical atlas bytes stay identical");
+    require(double_polls-single_polls==9,"Repeated TMEM snapshot retains hash/command checkpoints");
+    require(repeated.textures[0].memory.bytes==single.textures[0].memory.bytes,"Reused TMEM snapshot stays identical");
     end=a-8;a=end;
     command(ram,a,0xfd100000,0x5010);command(ram,a,0xf5000100,0);command(ram,a,0xf0000000,0);
     command(ram,a,0xf5480200,0);
     rect();command(ram,a,0xdf000000,0);
     auto changed=interpret_gbi(ram,0x1000);
     require(changed.textures.size()==2 && changed.rectangles[2].texture==1,
-        "Palette change invalidates repeated texture before atlas reuse");
+        "Palette change invalidates repeated texture");
     for(const auto& tex:changed.textures)require(tex.key==legacy_texture_key(tex),"TMEM/TLUT keys retain slow reference encoding");
-    require(changed.textures[0].rgba8[0]==255 && changed.textures[1].rgba8[1]==255,
-        "Atlas reflects ordered palette updates");
+    require(changed.textures[0].memory.palette(0)!=changed.textures[1].memory.palette(0),
+        "TLUT snapshots reflect ordered palette updates");
 }
 void addressing_fixtures() {
     DrawList list;list.initial_ram.resize(0x800000);
@@ -276,6 +276,9 @@ void addressing_fixtures() {
     list.textures[0].tile.cms=2;check({112,112,112,112,112,112});
     list.textures[0].tile.cms=0;list.textures[0].tile.shifts=1;list.rectangles[0].s=0;
     check({16,16,48,48,80,80});
+    // Reversed SETTILESIZE limits would give the clamp an inverted range.
+    list.textures[0].tile.cms=2;list.textures[0].tile.sl=16;list.textures[0].tile.sh=0;
+    rejects([&]{render_software(list);});
 }
 // Raw RDP command words for interpret_rdp fixtures.
 struct Rdp {

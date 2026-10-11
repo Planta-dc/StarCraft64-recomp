@@ -10,6 +10,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 from patch_runtime import patch_events
 from patch_vi_runtime import patch_vi_events
@@ -37,9 +40,7 @@ def main() -> None:
     parser.add_argument("runtime", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    runtime = args.runtime.resolve()
-    if not runtime.is_relative_to(root / "local"):
-        raise SystemExit("Patched dependencies must remain under local/")
+    runtime = require_local_or(sys.exit, args.runtime, root=root, what="Patched dependencies")
     marker = runtime / "sc64-host-patch.json"
     previous = {}
     if marker.exists():

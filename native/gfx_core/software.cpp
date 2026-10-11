@@ -239,6 +239,10 @@ void raster_band(const DrawList& list,std::vector<std::uint8_t>& ram,Band& band,
         const auto& tex=list.textures[r.texture];unsigned cycle=r.state.other_hi>>20&3;
         if(cycle!=0 && cycle!=2)throw std::runtime_error("Only observed 1-cycle/COPY is implemented");
         if(r.state.other_lo&0x30)throw std::runtime_error("Depth comparison/update needs new evidence");
+        // SETTILESIZE is stored unvalidated; reversed limits have no observed
+        // hardware meaning and would give address() an inverted clamp range.
+        if(!tex.background && (tex.tile.sh<tex.tile.sl || tex.tile.th<tex.tile.tl))
+            throw std::runtime_error("Reversed SETTILESIZE limits need new evidence");
         const auto [x0,y0,x1,y1]=raster_bounds(r);
         if(y1>1024 || y0>1024)throw std::runtime_error("Raster height exceeds budget");
         phase=1;

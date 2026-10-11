@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local
 from rom_info import NTSC_U_SHA1 as ROM_SHA1, normalize_rom
 from summarize_capture import summarize
 
@@ -189,9 +190,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         root = args.root.resolve()
-        output = args.output.resolve()
-        require(output.is_relative_to(root / 'local'), 'acceptance evidence must stay under ignored local/')
-        require(not output.exists(), 'choose a new report path; no overwrite is permitted')
+        output = require_local(args.output, new=True, root=root, what='Acceptance evidence')
         _, rom = normalize_rom(args.rom.read_bytes())
         result = evaluate(root, rom)
         with output.open('x') as stream:

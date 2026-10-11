@@ -198,7 +198,7 @@ def main(argv=None):
         rel = os.path.relpath(p, root)
         if ext == "chk":
             chks.append((rel, chk_info(d)))
-        elif ext == "unk":
+        elif ext in ("grp", "unk"):
             g = grp_relaxed(d)
             if g:
                 grps.append((rel, g))
@@ -218,7 +218,7 @@ def main(argv=None):
               % (rel.split("/")[-1], dims[0], dims[1], info.get("tileset"),
                  info.get("units"), (info.get("title") or "")[:48]))
 
-    print("\n== GRP candidates among .unk (%d) ==" % len(grps))
+    print("\n== GRP candidates among .grp/.unk (%d) ==" % len(grps))
     for rel, (frames, w, h) in grps[:20]:
         print("  %-28s frames=%-4d %dx%d" % (rel.split("/")[-1], frames, w, h))
     if len(grps) > 20:

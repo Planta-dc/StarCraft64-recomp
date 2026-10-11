@@ -6,9 +6,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import struct
 import subprocess
-import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
@@ -29,9 +31,7 @@ def main() -> None:
     parser.add_argument('--flash', type=Path, required=True, help='Original menu/save fixture')
     parser.add_argument('--output', type=Path, required=True, help='New directory under local/')
     args = parser.parse_args()
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT / 'local') or output.exists():
-        raise SystemExit('Choose a new private output under ignored local/')
+    output = require_local_or(sys.exit, args.output, new=True, root=ROOT, what='Private output')
     rom, flash = args.rom.resolve(strict=True), args.flash.resolve(strict=True)
     require_runner_rom(rom, 'address')
     if flash.stat().st_size != 131072:

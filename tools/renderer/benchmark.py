@@ -9,6 +9,9 @@ import platform
 import statistics
 import subprocess
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 from compare import case_paths
 
@@ -69,9 +72,7 @@ def main() -> None:
             parser.error('workers must be in [0,15]')
     if not 1 <= args.repeat <= 100:
         parser.error('repeat must be in [1,100]')
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT / 'local') or output.exists():
-        parser.error('Use a new ignored local/ output directory')
+    output = require_local_or(parser.error, args.output, new=True, root=ROOT, what='Output')
     manifest_bytes = args.manifest.read_bytes()
     manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
     manifest = json.loads(manifest_bytes)

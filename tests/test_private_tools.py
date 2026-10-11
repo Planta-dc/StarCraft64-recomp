@@ -69,6 +69,61 @@ class RequireLocalTests(unittest.TestCase):
             private_paths.require_local(root / 'local/existing', root=root)
 
 
+class RequireLocalOrTests(unittest.TestCase):
+    def test_reports_violations_through_the_cli_failure_hook(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / 'local').mkdir()
+            self.assertEqual(private_paths.require_local_or(SystemExit, root / 'local/ok', root=root, new=True),
+                             root / 'local/ok')
+            messages = []
+
+            def fail(message):
+                messages.append(message)
+                raise SystemExit(message)
+
+            with self.assertRaises(SystemExit):
+                private_paths.require_local_or(fail, root / 'outside', root=root, what='Report')
+            self.assertIn('Report must stay under ignored local/', messages[0])
+
+
+class GuessTypeTests(unittest.TestCase):
+    """Synthetic headers for every classifier; layouts follow guess_type.cpp."""
+
+    @staticmethod
+    def grp(frames=2, width=16, height=8):
+        data = bytearray(struct.pack('<HHH', frames, width, height))
+        start = 6 + frames * 8
+        for index in range(frames):
+            data += bytes((1, 1, width - 2, height - 2)) + struct.pack('<I', start + index * 4)
+        return bytes(data + bytes(frames * 4 + 4))
+
+    def test_grp_frame_table_follows_the_six_byte_header(self):
+        self.assertEqual(bolt.guess_type(self.grp()), 'grp')
+        self.assertEqual(bolt.guess_type(self.grp(frames=1)), 'grp')
+
+    def test_grp_rejects_misplaced_frame_table_and_out_of_canvas_frames(self):
+        shifted = bytearray(self.grp())
+        shifted[6:8] = b'\x00\x00'
+        shifted[8:] = shifted[6:-2]
+        self.assertNotEqual(bolt.guess_type(bytes(shifted)), 'grp')
+        wide = bytearray(self.grp())
+        wide[8] = 40  # frame width beyond the 16-pixel canvas
+        self.assertNotEqual(bolt.guess_type(bytes(wide)), 'grp')
+
+    def test_other_formats_keep_their_classification(self):
+        image = struct.pack('>HHIHHI', 0, 8, 0, 2, 2, 0) + bytes(4)
+        palette = struct.pack('>IH', 0, 255) + bytes(512)
+        pcm = struct.pack('>BBHII', 1, 16, 22050, 0, 20) + bytes(20)
+        table = struct.pack('<HHH', 2, 6, 8) + b'a\0b\0'
+        cases = {'unkimg': image, 'unkpal': palette[:518], 'unkpcm': pcm, 'tbl': table,
+                 'txt': b'hello\n', 'fnt': b'FONT' + bytes(40), 'chk': b'TYPE' + bytes(40),
+                 'wav': b'RIFF' + bytes(40), 'unk': bytes((0xff,)) * 40, 'unk-empty': b''}
+        for expected, payload in cases.items():
+            with self.subTest(expected=expected):
+                self.assertEqual(bolt.guess_type(payload), expected.removesuffix('-empty'))
+
+
 class BoltExtractTests(unittest.TestCase):
     def run_main(self, root, *argv):
         stderr = io.StringIO()

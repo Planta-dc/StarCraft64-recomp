@@ -12,8 +12,12 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 
 def inspect_output(directory: Path, log: str) -> dict:
@@ -42,9 +46,7 @@ def main() -> None:
     parser.add_argument("--replace", action="store_true", help="Replace a previous private generated output after success")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root / "local"):
-        raise SystemExit("Generated output must remain under ignored local/")
+    output = require_local_or(sys.exit, args.output, root=root, what="Generated output")
     if output.exists() and not args.replace:
         raise SystemExit("Output already exists; pass --replace for a transactional successful replacement")
     config = args.config.resolve()

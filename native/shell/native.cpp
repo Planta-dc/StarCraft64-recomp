@@ -392,7 +392,7 @@ nlohmann::json Native::telemetry() {
         {"capture_interpret_ms", s.capture_interpret_ms.load()}, {"system_cursor_hidden", system_cursor_hidden_},
         {"audio_underruns", audio::underruns()}, {"audio_dropped_frames", audio::dropped()},
         {"audio_played_frames", audio::played()}, {"audio_nonzero_frames", audio::nonzero()},
-        {"audio_lock_misses", audio::lock_misses()}, {"audio_wait_callbacks", audio::waits()},
+        {"audio_wait_callbacks", audio::waits()},
         {"audio_buffer_ms", audio::buffered_ms()}, {"audio_source_hz", audio::source_hz()},
         {"audio_backend", audio::backend()}, {"audio_dma_ms", audio::dma_ms()}, {"audio_target_ms", audio::target_ms()},
         {"audio_device_xruns", audio::hardware_xruns()}, {"audio_device_buffer_frames", audio::hardware_buffer_frames()},

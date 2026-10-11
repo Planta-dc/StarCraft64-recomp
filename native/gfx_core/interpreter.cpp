@@ -104,19 +104,8 @@ public:
                old.tlut_mode==tex.tlut_mode && old.memory.bytes==tex.memory.bytes)return i;
             fail("Texture content key collision");
         }
-        // A semantic match already owns the identical derived atlas. Check it
-        // before decoding the physical atlas again for a repeated rectangle.
-        if(tex.background) {tex.atlas_width=tex.width;tex.atlas_height=tex.height;}
-        else {tex.atlas_width=32;tex.atlas_height=(8192u>>tex.tile.size)/32;}
-        tex.rgba8.reserve(tex.atlas_width*tex.atlas_height*4);
-        Tile physical=tex.tile;physical.line=physical.tmem=0;
-        for(unsigned i=0;i<tex.atlas_width*tex.atlas_height;++i) {
-            if((i&255)==0)poll();
-            auto c=tex.background?tex.pixels[i]:tex.memory.fetch(physical,i,0,tex.tlut_mode);
-            for(int v:{c.r,c.g,c.b,c.a})tex.rgba8.push_back(std::uint8_t(v));
-        }
-        std::uint64_t allocated=tex.pixels.size()*sizeof(Color)+tex.rgba8.size()+4096;
-        for(const auto& t:out.textures)allocated+=t.pixels.size()*sizeof(Color)+t.rgba8.size()+4096;
+        std::uint64_t allocated=tex.pixels.size()*sizeof(Color)+4096;
+        for(const auto& t:out.textures)allocated+=t.pixels.size()*sizeof(Color)+4096;
         if(allocated>64*1024*1024)fail("Owned texture payload exceeds 64 MiB");
         out.textures.push_back(std::move(tex));return out.textures.size()-1;
     }
@@ -241,10 +230,8 @@ public:
             int hmax=((int(half(descriptor+10))*1024/r.dtdy)-1)&~3;
             int w=std::min(int(half(descriptor+6)),wmax);
             int h=std::min(int(half(descriptor+14)),hmax);
-            if(flip&1)r.x0+=int(half(descriptor+6))-w;
             r.x1=r.x0+w;r.y1=r.y0+h;
         }
-        if(flip&1) {r.s+=((r.x1-r.x0)*r.dsdx)/128-32;r.dsdx=-r.dsdx;}
         auto saved=state;
         // BG_COPY's emitted RDP work switches cycle to COPY, then the next GBI
         // mode command re-establishes caller state. Do not add a CPU overlay.

@@ -5,6 +5,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import numpy as np
 from PIL import Image
 
@@ -62,9 +65,7 @@ def main() -> None:
     parser.add_argument('--manifest', type=Path, default=ROOT / 'local/inputs/renderer/manifest.json')
     parser.add_argument('--baseline', type=Path, default=ROOT / 'local/reports/renderer/fenced-review-fixed')
     args = parser.parse_args()
-    output = args.output.resolve()
-    if not output.is_relative_to(ROOT / 'local'):
-        raise SystemExit('Private reports must remain below ignored local/')
+    output = require_local_or(sys.exit, args.output, root=ROOT, what='Private reports')
     manifest = json.loads(args.manifest.read_text())
     run_path = output.parent / 'run.json'
     run = json.loads(run_path.read_text())

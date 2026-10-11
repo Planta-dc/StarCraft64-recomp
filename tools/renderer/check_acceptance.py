@@ -6,6 +6,9 @@ from collections import Counter
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 from compare import case_paths, metric, pixels
 
 
@@ -71,9 +74,7 @@ def main():
     p.add_argument('--renderer', type=Path, default=Path('local/build/renderer/native/gfx_core/sc64_gfx_replay'))
     args = p.parse_args()
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root/'local') or output.exists():
-        p.error('Use a new ignored local/ result path')
+    output = require_local_or(p.error, args.output, new=True, root=root, what='Output')
     result = check(args.comparison, args.visual, args.renderer)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2)+'\n')

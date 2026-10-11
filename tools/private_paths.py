@@ -7,6 +7,7 @@ the APK audit and ``.gitignore`` do not drift apart.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,3 +35,15 @@ def require_local(path: Path, *, new: bool = False, root: Path = ROOT, what: str
     if new and (resolved.exists() or resolved.is_symlink()):
         raise PrivatePathError(f'{what} must be new; refusing to reuse {path}')
     return resolved
+
+
+def require_local_or(fail: Callable[[str], object], path: Path, **kwargs) -> Path:
+    """``require_local`` for command-line tools: report a violation through ``fail``.
+
+    Pass ``sys.exit`` or ``argparse.ArgumentParser.error``; both end the process.
+    """
+    try:
+        return require_local(path, **kwargs)
+    except PrivatePathError as error:
+        fail(str(error))
+        raise

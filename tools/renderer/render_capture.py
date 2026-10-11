@@ -5,8 +5,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+import subprocess
 from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'recompile'))
 from inspect_capture import find_task, reconstruct, UCODE_SHA1
@@ -21,9 +23,7 @@ def main():
     p.add_argument('--renderer', type=Path, default=Path('local/build/renderer/native/gfx_core/sc64_gfx_replay'))
     args = p.parse_args()
     root = Path(__file__).resolve().parents[2]
-    output = args.output.resolve()
-    if not output.is_relative_to(root/'local') or output.exists():
-        p.error('Use a new ignored local/ output directory')
+    output = require_local_or(p.error, args.output, new=True, root=root, what='Output')
     event = find_task(args.capture, args.task)
     if event is None or event['ucode_sha1'] != UCODE_SHA1:
         raise ValueError('Missing task or unexpected microcode')

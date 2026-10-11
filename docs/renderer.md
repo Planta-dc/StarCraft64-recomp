@@ -49,8 +49,8 @@ bytes; RGBA8 payloads use component order R,G,B,A. C++ vectors own all data.
   derivative 5.10, tile snapshot index, complete target/state and source PC.
   COPY derivatives are normalized to ordinary per-pixel source advance.
 - `Texture`: collision-checked content key, canonical physical TMEM/TLUT,
-  addressing parameters and decoded RGBA8 atlas. Backgrounds additionally own
-  full CPU source colors. TMEM atlas indices are physical texels; odd row,
+  addressing parameters. Backgrounds additionally own full CPU source colors.
+  TMEM indices are physical texels; odd row,
   split RG/BA planes, addressing and filtering are separate sampling operations.
 - `State`: complete combiner/othermode, colors and quarter-pixel scissor.
 - `initial_ram`: independent canonical 8 MiB packet. Software rendering returns

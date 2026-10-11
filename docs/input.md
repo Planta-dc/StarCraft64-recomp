@@ -797,9 +797,9 @@ ADR-039 fixes three findings without reopening the accepted desktop scope:
 
 Regression coverage in `tests/native/test_desktop_bridge.cpp` verifies retained
 image metadata for offscreen/future tasks and promotion when VI acknowledges
-the future task. `tests/test_touch_input.lua` exercises the actual GUI dispatch
+the future task. `tests/native/test_touch_input.cpp` exercises the actual GUI dispatch
 for unnamed movements across a hint and HUD padding, button release and modal
-cancellation. `tests/test_gestures.lua` covers mouse/touch, release before A
+cancellation. `tests/native/test_gestures.cpp` covers mouse/touch, release before A
 starts, a long physically held selection, immobile but fresh cursor feedback,
 deadline cancellation and a subsequent successful click. These controlled
 fixtures do not claim that the original game always stalls at those points.
@@ -1248,7 +1248,7 @@ Build/test logs: `menu-speed-build-0*.log`, `menu-speed-make-test-01.log`.
 
 - [x] Original helper/dispatcher input rules recorded (level + 250 ms gate, edge, grid arm).
 - [x] Native acceptance trains: main menu list, Single Player rows, pause modal, tab lock.
-- [x] Fixtures: exact per-field press/neutral sequence, retry, slow acknowledgement without re-press, tab lock, overshoot reversal (list/tabs/grid), cancellation, ignored fast repeat tap (`test_menu_input.lua`); GUI mouse/touch dispatch sequence (`test_touch_input.lua`).
+- [x] Fixtures: exact per-field press/neutral sequence, retry, slow acknowledgement without re-press, tab lock, overshoot reversal (list/tabs/grid), cancellation, ignored fast repeat tap (`test_menu_input.cpp`); GUI mouse/touch dispatch sequence (`test_touch_input.cpp`).
 - [x] Native adapter routes: rows, tabs 0->2->0, build grid, campaign side clicks, intro/briefing/advisor with 4-field pulses.
 - [ ] Results/Defeat/Victory tabs, options screens and episode-row routes with the new timing (D-050).
 - [ ] Two unexplained desktop tab-route stalls (D-050); physical touch and phone feel.

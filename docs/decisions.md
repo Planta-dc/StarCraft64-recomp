@@ -1161,7 +1161,7 @@ for a selected worker tapping resources. No guest memory or game handlers change
 already at its target. Cursor travel can hide that wait; the second tap resolves
 the order immediately on release, subject to fresh cursor feedback. Explicit
 right-click/two-finger B and keyboard controls keep their existing paths.
-`test_map_taps.lua` covers delayed travel, poll cadence, contact IDs, jitter,
+`tests/native/test_map_taps.cpp` covers delayed travel, poll cadence, contact IDs, jitter,
 single/resource taps, late/distant taps, slides and cancellation. The production
 GUI fixture verifies MULTI_TOUCH routing and duplicate mouse suppression;
 in-memory mutations removing the delay or changing B to A both fail the test.
@@ -1892,3 +1892,42 @@ recorded. Evidence: `tests/native/test_menu_input.cpp` and the native runs
 `local/reports/input/exp-brief-06`, `-08`, `-10` (Wasteland, one save, macOS
 desktop). Android touch, other missions and the last-page Start on a 2P/other
 campaign were not exercised.
+
+## ADR-079 — DrawList textures no longer own a decoded RGBA8 atlas (ACCEPTED)
+
+**Context:** ADR-020 gave every texture a decoded RGBA8 atlas for a future GPU
+backend. The shipped path is the software rasterizer, which samples TMEM and
+background pixels directly; only fixtures read the atlas. On the private
+20-case original corpus the atlas decode was about a fifth of GBI
+interpretation time (median 5.42 ms with, 4.19 ms without).
+
+**Decision:** Remove `Texture::rgba8`, `atlas_width` and `atlas_height` and the
+decode loop. Content keys, collision checks and the 64 MiB payload budget keep
+their meaning (the budget now counts decoded background pixels only). Unsupported
+texture formats are therefore rejected when the rectangle is rasterized, not
+when it is interpreted. SETTILESIZE limits are still stored unvalidated;
+rasterization rejects a tile whose limits are reversed (`sh < sl`, `th < tl`),
+which would otherwise give the addressing clamp an inverted range.
+
+**Consequences:** All 20 corpus cases render byte-identical RAM. A future GPU
+backend derives its own atlas from `Texture::memory`. ADR-020 otherwise stands.
+
+## ADR-080 — App builds default to CMake Release on every platform (ACCEPTED)
+
+**Context:** The macOS, Windows, Linux and Android builders configured
+`RelWithDebInfo` (`-O2 -g -DNDEBUG`); Android already stripped debug info and
+shipped an APK without debuggable packaging by default.
+
+**Decision:** `tools/desktop/build.py`, `tools/desktop/cross_build.py` and
+`tools/android/build.py` default to `Release` and take `--build-type
+Release|RelWithDebInfo|Debug`; the Makefile passes `BUILD_TYPE` (default
+`Release`). The build type is recorded in each receipt. Test and runtime code
+that needs assertions keeps its explicit `-UNDEBUG`. The offline renderer
+benchmark target stays `RelWithDebInfo` so it remains comparable with preserved
+baseline binaries.
+
+**Consequences:** Smaller binaries without debug info (macOS app 9.4 MB →
+8.6 MB sc64_app); symbols need `BUILD_TYPE=RelWithDebInfo`. A build-type change
+reconfigures and rebuilds the existing tree. Release was compiled and the 18
+desktop CTest cases passed on macOS; Windows, Linux and Android Release builds
+were not rebuilt here.

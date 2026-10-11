@@ -7,6 +7,9 @@ import json
 import subprocess
 import time
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -43,12 +46,8 @@ def main() -> None:
     parser.add_argument('--pause-at', type=float, default=0, help='Optional script-time lifecycle probe')
     parser.add_argument('--resume-at', type=float, default=0)
     args = parser.parse_args()
-    output = args.output.resolve()
-    storage = args.storage.resolve()
-    if not output.is_relative_to(ROOT / 'local') or output.exists():
-        raise SystemExit('Choose a new report directory under ignored local/')
-    if not storage.is_relative_to(ROOT / 'local'):
-        raise SystemExit('This research launcher keeps personal storage under ignored local/')
+    output = require_local_or(sys.exit, args.output, new=True, root=ROOT, what='Report directory')
+    storage = require_local_or(sys.exit, args.storage, root=ROOT, what='Personal storage')
     if args.seconds < 0 or args.seconds > 3600:
         raise SystemExit('seconds must be between 0 (interactive) and 3600')
     if args.pause_at < 0 or args.resume_at < 0 or (args.resume_at > 0 and args.resume_at <= args.pause_at):

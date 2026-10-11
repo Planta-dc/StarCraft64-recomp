@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <span>
 #include "../runtime/minimap.hpp"
+#include "../runtime/guest_addresses.hpp"
 
 namespace sc64::desktop {
 struct CursorFeedback {
@@ -36,7 +37,7 @@ inline CursorFeedback read_cursor(std::span<const std::uint8_t> ram, std::uint64
     result.x = x * .5f; result.y = y * .5f;
     const float divisor=std::bit_cast<float>(word(0xafdf8));
     if (std::isfinite(divisor) && divisor>0) result.divisor=divisor;
-    if (ram.size() >= 0xd13dc && half(0xa5ab4) == 3 && ram[0xafefc] == 0) {
+    if (ram.size() >= 0xd13dc && half(runtime::guest::physical(runtime::guest::game_mode)) == 3 && ram[runtime::guest::physical(runtime::guest::split_screen)] == 0) {
         // See research.md: original camera helpers clamp these signed pixel
         // offsets. Expose half-size image units from the owned render snapshot.
         auto signed_word = [&](unsigned a) { return std::bit_cast<std::int32_t>(word(a)); };

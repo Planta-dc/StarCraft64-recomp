@@ -5,8 +5,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import struct
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
+import struct
 import zlib
 from inspect_capture import find_task, reconstruct
 
@@ -24,9 +26,7 @@ def main() -> None:
     parser.add_argument("--height", type=int, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    private = Path(__file__).resolve().parents[2] / "local"
-    if not args.output.resolve().is_relative_to(private) or args.output.exists():
-        parser.error("Output must be new and remain under ignored local/")
+    require_local_or(parser.error, args.output, new=True, root=Path(__file__).resolve().parents[2], what="Output")
     if not (0 < args.width <= 2048 and 0 < args.height <= 2048):
         parser.error("Invalid dimensions")
     event = find_task(args.capture, args.task)

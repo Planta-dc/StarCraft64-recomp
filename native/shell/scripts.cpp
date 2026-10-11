@@ -510,7 +510,7 @@ void HostScript::update(double dt) {
                                     "audio_nonzero_frames", "audio_played_frames", "audio_underruns",
                                     "audio_dropped_frames", "audio_buffer_ms", "audio_buffering", "audio_source_hz",
                                     "audio_backend", "audio_dma_ms", "audio_target_ms", "audio_device_xruns",
-                                    "audio_device_buffer_frames", "audio_lock_misses", "audio_wait_callbacks",
+                                    "audio_device_buffer_frames", "audio_wait_callbacks",
                                     "error"})
                 if (logged.contains(key)) compact[key] = logged[key];
             logged = std::move(compact);

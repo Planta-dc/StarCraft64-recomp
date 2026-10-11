@@ -24,11 +24,16 @@ describes the former engine build and remains historical evidence for it.
   `zipalign -P 16` and `apksigner` use the existing private debug key. No Gradle,
   former engine build tool or remote service is involved.
 - **Identity:** package `com.nomadic.sc64.personal`, the same key, versionCode 2
-  (above the former build), debuggable like the former debug variant so an
-  earlier build can be reinstalled with `adb install -r -d` without losing data.
+  (above the former build). Builds are not debuggable by default, so `run-as`
+  cannot read the app data; `make build-android ANDROID_DEBUGGABLE=1` (or
+  `tools/android/build.py --debuggable`) packages a debuggable APK, which also
+  allows reinstalling an earlier build with `adb install -r -d` without losing
+  data. Installing a release build over an earlier debuggable one with the same
+  key keeps app data.
 - **Configuration:** `assets/sc64/config.ini` (compact telemetry, bundled ROM,
   `render_driver = vulkan,opengles2`), overridden by the string-array extra
-  `com.nomadic.sc64.ARGUMENTS` (`--config=sc64.key=value`).
+  `com.nomadic.sc64.ARGUMENTS`; the exported activity honors only
+  `--config=sc64.render_driver=…` from it and ignores every other key.
 - **Platform:** storage is `getFilesDir()` as before; the bundled ROM is read
   from assets into owned memory; ROM import uses SDL's document picker and an
   owned copy; Back maps to `android_back`; activity suspension reaches the
@@ -422,10 +427,10 @@ ADR-045 records the implementation: 60 ms startup/recovery PCM pre-roll, bounded
 camera displacement through Z+stick and faster continuous cursor steering.
 
 Audio diagnostics in `SC64` telemetry now include `audio_buffer_ms`,
-`audio_buffering`, `audio_wait_callbacks` and `audio_lock_misses` alongside
+`audio_buffering` and `audio_wait_callbacks` alongside
 `audio_underruns`, discarded frames and nonzero PCM. Wait callbacks include
 intentional pre-roll and must not be described as device underruns. Underruns
-count actual PCM starvation or a callback mutex miss. Check their deltas during
+count actual PCM starvation. Check their deltas during
 startup and settled gameplay separately. A flagship label alone does not
 establish scheduling, rendering, producer throughput or audio-device latency.
 
@@ -496,8 +501,7 @@ pre-roll to DMA cadence. Requested AAudio reserve is at least four bursts or
 
 Additional telemetry: `audio_source_hz`, `audio_dma_ms`, `audio_target_ms`,
 `audio_device_xruns`, `audio_device_buffer_frames`. AAudio xruns are distinct from
-host PCM starvation; -1 means unsupported, not zero. `audio_lock_misses` remains
-zero for compatibility because the consumer no longer acquires that mutex.
+host PCM starvation; -1 means unsupported, not zero.
 For phone diagnosis, keep a log through at least a minute of main-menu music,
 then mission start, and compare counter deltas by `ui_mode`. Avoid attributing
 loading-transition silence to a steady-menu pass. Reports remain private.

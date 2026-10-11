@@ -5,6 +5,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 import subprocess
 
 PINS = {'ares/n64/sc64-research.cpp': '89fc4b0f68c5c7da37e775a520859c20f75e5067262c9d58c2151aed1369eabf',
@@ -70,9 +73,7 @@ def main():
     p.add_argument('checkout', type=Path)
     args = p.parse_args()
     root = Path(__file__).resolve().parents[2]
-    checkout = args.checkout.resolve()
-    if not checkout.is_relative_to(root/'local'):
-        p.error('Use the ignored local/ research checkout')
+    checkout = require_local_or(p.error, args.checkout, root=root, what='Research checkout')
     patch(checkout)
     print('Post-task capture is opt-in via SC64_STAGE2_POST_TASK=1')
 

@@ -5,6 +5,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from private_paths import require_local_or
 from check_ui import observations
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -37,8 +40,7 @@ def check(rows: list[dict], images: dict[str,bytes]) -> dict:
 def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('run',type=Path)
-    directory=parser.parse_args().run.resolve()
-    if not directory.is_relative_to(ROOT/'local'): raise SystemExit('Reports must stay under ignored local/')
+    directory=require_local_or(sys.exit,parser.parse_args().run,root=ROOT,what='Reports')
     receipt=json.loads((directory/'run.json').read_text())
     raw=(directory/'engine.log').read_bytes()
     if receipt.get('schema')!=3 or receipt.get('exit_code')!=0 or not receipt.get('binary_unchanged') \

@@ -25,6 +25,16 @@ bool matches_file(const std::filesystem::path& path, std::span<const std::uint8_
            std::equal(expected.begin(), expected.end(), actual.begin(),
                       [](std::uint8_t a, char b) { return a == static_cast<std::uint8_t>(b); });
 }
+#ifndef _WIN32
+// fsync(2) on Apple platforms only reaches the drive; F_FULLFSYNC also flushes
+// the drive's write cache, which the "synchronized" publish contract needs.
+int durable_sync(int descriptor) {
+#if defined(__APPLE__) && defined(F_FULLFSYNC)
+    if (::fcntl(descriptor, F_FULLFSYNC) == 0) return 0;
+#endif
+    return ::fsync(descriptor);
+}
+#endif
 constexpr std::uint32_t ready_status = 0x008c;
 constexpr std::array<std::uint8_t, 8> silicon_id{0x11, 0x11, 0x80, 0x01, 0x00, 0xc2, 0x00, 0x1d};
 // Publish only after the complete image has been written, synchronized and
@@ -44,7 +54,7 @@ void atomic_write(const std::filesystem::path& path, std::span<const std::uint8_
 #ifdef _WIN32
     good = _commit(_fileno(stream)) == 0 && good;
 #else
-    good = ::fsync(::fileno(stream)) == 0 && good;
+    good = durable_sync(::fileno(stream)) == 0 && good;
 #endif
     good = std::fclose(stream) == 0 && good;
     if (!good) {
@@ -77,7 +87,7 @@ void sync_parent_directory([[maybe_unused]] const std::filesystem::path& path) {
     const auto parent = path.has_parent_path() ? path.parent_path() : std::filesystem::path(".");
     const int directory = ::open(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     if (directory < 0) throw std::system_error(errno, std::generic_category(), "open FlashRAM save directory");
-    const int synced = ::fsync(directory);
+    const int synced = durable_sync(directory);
     const int sync_error = errno;
     ::close(directory);
     if (synced != 0) throw std::system_error(sync_error, std::generic_category(), "sync FlashRAM save directory");
