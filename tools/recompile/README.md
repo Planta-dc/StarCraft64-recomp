@@ -4,6 +4,22 @@ These tools use the verified NTSC-U ROM profile and the pinned source APIs.
 Run them from the repository root. All outputs are private under `local/`.
 The original ROM is read only and remains unchanged.
 
+One command runs the whole chain below (patch and build N64Recomp, `prepare.py`,
+`tools/input/add_ui_hooks.py`, `run_recompiler.py --replace`, observer validation)
+and leaves `local/generated/game` ready for `make build`:
+
+```sh
+make recompile ROM="/path/to/your.z64"
+```
+
+It needs the project `.venv` (spimdisasm) and the prepared libultra inventory
+`local/reports/libultra-resident/inventory.json`, which is verified but never
+rebuilt (see [libultra-inventory.md](../../docs/libultra-inventory.md)). Each run
+analyzes into a fresh `local/recompile/symbols-<timestamp>/`; an existing
+generated game is replaced transactionally and its previous output stays in the
+scratch directory. The result was verified byte-identical to the previous
+generation on the NTSC-U ROM. The manual steps follow.
+
 ```sh
 git -C third_party/N64Recomp submodule update --init --recursive
 python3 tools/recompile/patch_recompiler.py third_party/N64Recomp

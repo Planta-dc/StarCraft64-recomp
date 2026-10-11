@@ -3,6 +3,8 @@
 .DEFAULT_GOAL := help
 
 PYTHON ?= python3
+# Recompilation needs the splat/spimdisasm environment.
+RECOMP_PYTHON ?= .venv/bin/python
 ADB ?= adb
 JOBS ?= 8
 ROM ?=
@@ -31,12 +33,13 @@ export ROM BUNDLE_ROM SERIAL ANDROID_SDK APK STORAGE REPORT RUN_SECONDS SMOKE_SE
 export BASELINE_REPLAY RENDERER_MANIFEST
 export PAGE_SIZE ANDROID_BACKEND
 
-.PHONY: help bootstrap build build-desktop configure-desktop run run-desktop build-windows build-linux \
+.PHONY: help bootstrap recompile build build-desktop configure-desktop run run-desktop build-windows build-linux \
         build-android build-android-opengles icon configure-android check-apk devices install-android \
         run-android smoke-android audio-android benchmark-renderer test test-python test-native
 
 help:
 	@printf '%s\n' \
+	  'make recompile ROM="/path/game.z64"  Generate local/generated/game from the ROM (needs the libultra inventory)' \
 	  'make build / build-desktop   Build the personal macOS arm64 SDL3 app' \
 	  'make run / run-desktop       Launch it; ROM="/path/game.z64" is optional' \
 	  'make build-windows          Cross-build the Windows x86_64 zip (mingw-w64)' \
@@ -71,6 +74,10 @@ bootstrap:
 icon:
 	@test -n "$(ROM)" || { echo 'make icon requires ROM="/path/game.z64"' >&2; exit 2; }
 	$(PYTHON) tools/desktop/icon.py "$(ROM)"
+
+recompile:
+	@test -n "$(ROM)" || { echo 'make recompile requires ROM="/path/game.z64"' >&2; exit 2; }
+	$(RECOMP_PYTHON) tools/recompile/recompile_all.py "$(ROM)" --jobs "$$JOBS"
 
 build: build-desktop
 
