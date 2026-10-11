@@ -1,0 +1,601 @@
+{
+  "schema": 1,
+  "recipes": {
+    "reference-cold": {
+      "state": "none",
+      "mode": "default",
+      "actions": [
+        {
+          "pak": "Rumble Pak",
+          "fields": 300
+        },
+        {
+          "window": "startup",
+          "fields": 100
+        },
+        {
+          "fields": 560
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        },
+        {
+          "window": "intro",
+          "fields": 6
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "window": "main-menu",
+          "fields": 6
+        }
+      ]
+    },
+    "reference-menu": {
+      "state": "none",
+      "mode": "default",
+      "actions": [
+        {
+          "fields": 960,
+          "save": "title"
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "window": "menu",
+          "fields": 6
+        }
+      ]
+    },
+    "reference-menu-02": {
+      "state": "reference-menu/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "fields": 600
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        }
+      ]
+    },
+    "mission-01": {
+      "state": "reference-menu-02/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "window": "mission-list",
+          "fields": 6
+        },
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        },
+        {
+          "window": "briefing",
+          "fields": 6
+        }
+      ]
+    },
+    "mission-02": {
+      "state": "mission-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "fields": 360
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        },
+        {
+          "window": "briefing-detail",
+          "fields": 6
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "window": "game-1p",
+          "fields": 6
+        }
+      ]
+    },
+    "game-1p-01": {
+      "state": "mission-02/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "fields": 600
+        },
+        {
+          "window": "map-1p",
+          "fields": 12
+        },
+        {
+          "fields": 120
+        },
+        {
+          "window": "map-1p-later",
+          "fields": 12
+        }
+      ]
+    },
+    "game-1p-02": {
+      "state": "game-1p-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        },
+        {
+          "window": "map-clear",
+          "fields": 12
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "menu-2p-01": {
+      "state": "reference-cold/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "window": "menu-2p",
+          "fields": 6
+        }
+      ]
+    },
+    "game-2p-01": {
+      "state": "menu-2p-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 900
+        },
+        {
+          "window": "map-2p",
+          "fields": 12
+        }
+      ]
+    },
+    "reference-2p-fields": {
+      "state": "game-2p-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "window": "two-player-fields",
+          "fields": 24,
+          "screens": true
+        }
+      ]
+    },
+    "feedback-2p": {
+      "state": "game-2p-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "window": "feedback-2p",
+          "fields": 24
+        },
+        {
+          "player": 2,
+          "stick": [
+            50,
+            0
+          ],
+          "fields": 30
+        },
+        {
+          "window": "feedback-2p-move",
+          "fields": 24
+        }
+      ]
+    },
+    "reference-4mb": {
+      "state": "none",
+      "mode": "4mb",
+      "actions": [
+        {
+          "fields": 960
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        }
+      ]
+    },
+    "intro-decode": {
+      "state": "reference-menu/title.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        },
+        {
+          "window": "intro-decode",
+          "fields": 120
+        }
+      ]
+    },
+    "save-options-01": {
+      "state": "game-1p-02/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "save-options-02": {
+      "state": "save-options-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "Down",
+          "fields": 1
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "save-options-03": {
+      "state": "save-options-02/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "B",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        },
+        {
+          "hold": "Down",
+          "fields": 6
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "save-options-04": {
+      "state": "save-options-03/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "B",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        },
+        {
+          "hold": "Down",
+          "fields": 6
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "Down",
+          "fields": 6
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "Down",
+          "fields": 6
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "save-game-01": {
+      "state": "save-options-04/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "Down",
+          "fields": 6
+        },
+        {
+          "fields": 12
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        }
+      ]
+    },
+    "save-game-02": {
+      "state": "save-game-01/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 120
+        }
+      ]
+    },
+    "save-restart": {
+      "state": "none",
+      "mode": "default",
+      "actions": [
+        {
+          "fields": 960
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "Right",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        },
+        {
+          "hold": "Right",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        }
+      ],
+      "flash": "save-game-02/end.flash.bin"
+    },
+    "save-loaded": {
+      "state": "save-restart/end.state",
+      "mode": "default",
+      "actions": [
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 900
+        },
+        {
+          "window": "loaded-map",
+          "fields": 24
+        }
+      ]
+    },
+    "cold-saved-mission-02": {
+      "state": "none",
+      "mode": "default",
+      "actions": [
+        {
+          "pak": "Controller Pak",
+          "fields": 960
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 60
+        },
+        {
+          "hold": "Start",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 180
+        },
+        {
+          "hold": "Right",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        },
+        {
+          "hold": "Right",
+          "fields": 6
+        },
+        {
+          "fields": 30
+        },
+        {
+          "hold": "A",
+          "fields": 6
+        },
+        {
+          "fields": 900
+        },
+        {
+          "window": "cold-loaded-map",
+          "fields": 24,
+          "screens": true
+        }
+      ],
+      "flash": "save-game-02/end.flash.bin"
+    }
+  }
+}

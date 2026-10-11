@@ -1,0 +1,70 @@
+# User-supplied ROMs in any directory, regardless of case.
+*.[zZ]64
+*.[vV]64
+*.[nN]64
+*.[rR][oO][mM]
+*.[bB][iI][nN]
+*.zip
+*.7z
+*.rar
+
+# Private inputs and all game-derived output (including C and RSP code).
+/local/
+/roms/
+/gamedata/
+/extracted/
+/assets_extracted/
+/generated/
+/RecompiledFuncs/
+/RecompiledPatches/
+/recompiled/
+/rsp/generated/
+funcs_*.c
+funcs.h
+recomp_entrypoint.c
+recomp_overlays.inl
+/captures/
+/evidence/
+/splat-work/
+/third_party/
+/vendor/
+/build/
+/dist/
+*.a
+*.lib
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.apk
+*.aab
+*.nsp
+*.sav
+*.sra
+*.eep
+*.fla
+*.mpk
+*.state
+
+# Signing identities for personal APKs (keystores, raw keys, v4 signatures).
+*.keystore
+*.jks
+*.p12
+*.pk8
+*.pem
+*.idsig
+
+# Game-derived media and RAM dumps written outside local/ by older or manual
+# runs. All audio here comes from the ROM; authored PNGs may live elsewhere,
+# so PNG ignores stay scoped to the repository root and tool directories.
+*.wav
+*.ram
+events.jsonl
+/*.png
+/tools/**/*.png
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
