@@ -3,10 +3,14 @@ name: build
 on:
   workflow_dispatch:
     inputs:
-      rom_url:
-        description: "Temporary ROM link (e.g. Litterbox)"
+      runner:
+        description: "Where to run"
         required: true
-        type: string
+        type: choice
+        default: github-hosted
+        options:
+          - github-hosted
+          - self-hosted
       target:
         description: "What to build"
         required: true
@@ -17,19 +21,42 @@ on:
           - build-linux
           - build-windows
           - build-android
+      rom_url:
+        description: "ROM link (only needed for build-android)"
+        required: false
+        type: string
 
 jobs:
   build:
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ${{ inputs.runner == 'github-hosted' && 'macos-14' || fromJSON('["self-hosted","macOS","ARM64"]') }}
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
-          clean: false    # keeps the ignored local/ folder
+          clean: false    # keeps the ignored local/ folder on self-hosted runners
+
+      - name: Install tools (GitHub-hosted only)
+        if: inputs.runner == 'github-hosted'
+        run: |
+          brew install llvm cmake ninja
+          python3 -m pip install --break-system-packages numpy pillow
+
+      - name: Check generated game code
+        run: |
+          if [ ! -d local/generated/game ]; then
+            echo "::error::local/generated/game is missing. The ROM recompile step has not been run on this machine."
+            exit 1
+          fi
 
       - name: Fetch ROM
+        if: inputs.target == 'build-android'
         env:
           ROM_URL: ${{ inputs.rom_url }}
         run: |
+          if [ -z "$ROM_URL" ]; then
+            echo "::error::build-android needs a ROM link"
+            exit 1
+          fi
           echo "::add-mask::$ROM_URL"
           curl -fsSL "$ROM_URL" -o "$RUNNER_TEMP/sc64.z64"
 
