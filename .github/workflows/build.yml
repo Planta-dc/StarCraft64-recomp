@@ -1,0 +1,49 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      rom_url:
+        description: "Temporary ROM link (e.g. Litterbox)"
+        required: true
+        type: string
+      target:
+        description: "What to build"
+        required: true
+        type: choice
+        default: build
+        options:
+          - build
+          - build-linux
+          - build-windows
+          - build-android
+
+jobs:
+  build:
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false    # keeps the ignored local/ folder
+
+      - name: Fetch ROM
+        env:
+          ROM_URL: ${{ inputs.rom_url }}
+        run: |
+          echo "::add-mask::$ROM_URL"
+          curl -fsSL "$ROM_URL" -o "$RUNNER_TEMP/sc64.z64"
+
+      - name: Build
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          make bootstrap
+          if [ "$TARGET" = "build-android" ]; then
+            make build-android BUNDLE_ROM=1 ROM="$RUNNER_TEMP/sc64.z64"
+          else
+            make "$TARGET"
+          fi
+
+      - name: Remove ROM
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sc64.z64"
